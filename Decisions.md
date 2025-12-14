@@ -1,3 +1,20 @@
+# Dispute Withdrawals Not Supported
+Problem: Should the system support disputing withdrawal transactions in addition to deposits? 
+The dispute workflow (dispute → resolve/chargeback) has clear, well-defined semantics for deposit transactions:
+- Dispute: Claim that incoming funds are fraudulent/erroneous → move from available to held
+- Resolve: Dispute rejected, funds are legitimate → move from held back to available
+- Chargeback: Dispute accepted, funds reversed → remove from held, lock account
+
+However, for withdrawal transactions, the semantics become unclear:
+- Dispute a withdrawal: Does this mean the withdrawal was erroneous and should be reversed? If so, should we restore funds to held or available?
+- Resolve: Does this mean "confirm the withdrawal was correct" (no action needed)? Or "reject the dispute and re-withdraw the funds"?
+- Chargeback: Does this mean "accept the dispute and keep restored funds in available"? Or "finalize reversal and lock account"?
+
+Missing Requirements: The specification does not define the expected behavior for withdrawal disputes. Without clear requirements for what resolve and chargeback mean in the withdrawal context, implementing this feature would require making arbitrary assumptions about business logic. Real-World Context: While withdrawal disputes could theoretically reverse erroneous transactions, the dispute/resolve/chargeback terminology comes from payment card processing where it specifically applies to charges (deposits from the merchant's perspective), not withdrawals. 
+
+Decision: Only deposit transactions are stored in disputable_transactions and support the dispute workflow. Withdrawal disputes are not supported due to undefined semantics. 
+
+
 # Design Decisions
 
 ## Concurrency
