@@ -33,10 +33,6 @@ impl PaymentsEngine {
             TransactionType::Deposit | TransactionType::Withdrawal
         ) && self.processed_tx_ids.contains(&tx.tx)
         {
-            eprintln!(
-                "Warning: Ignoring duplicate transaction ID {} for client {}",
-                tx.tx, tx.client
-            );
             return;
         }
 
@@ -48,17 +44,9 @@ impl PaymentsEngine {
             if let Some(amount) = tx.amount {
                 // Reject negative or zero amounts for deposits/withdrawals
                 if amount <= Decimal::ZERO {
-                    eprintln!(
-                        "Warning: Ignoring transaction {} with non-positive amount",
-                        tx.tx
-                    );
                     return;
                 }
             } else {
-                eprintln!(
-                    "Warning: Ignoring {:?} transaction {} without amount",
-                    tx.tx_type, tx.tx
-                );
                 return;
             }
         }
@@ -95,10 +83,6 @@ impl PaymentsEngine {
 
         // Process deposit (returns false if account is locked)
         if !account.deposit(amount) {
-            eprintln!(
-                "Warning: Ignoring deposit on locked account for client {} (tx {})",
-                tx.client, tx.tx
-            );
             return;
         }
 
@@ -120,19 +104,8 @@ impl PaymentsEngine {
         };
 
         // Process withdrawal (returns false if insufficient funds or account is locked)
-        if !account.withdraw(amount) {
-            if account.locked {
-                eprintln!(
-                    "Warning: Ignoring withdrawal on locked account for client {} (tx {})",
-                    tx.client, tx.tx
-                );
-            } else {
-                eprintln!(
-                    "Warning: Ignoring withdrawal due to insufficient funds for client {} (tx {})",
-                    tx.client, tx.tx
-                );
-            }
-        }
+        // Silently ignore if withdrawal fails
+        account.withdraw(amount);
     }
 
     /// Process a dispute transaction
@@ -145,19 +118,11 @@ impl PaymentsEngine {
 
         // Verify client ID matches (security check)
         if stored_tx.client_id != tx.client {
-            eprintln!(
-                "Warning: Ignoring dispute on transaction {} - client mismatch",
-                tx.tx
-            );
             return;
         }
 
         // Check if already disputed
         if stored_tx.disputed {
-            eprintln!(
-                "Warning: Ignoring dispute on transaction {} - already disputed",
-                tx.tx
-            );
             return;
         }
 
@@ -169,10 +134,6 @@ impl PaymentsEngine {
 
         // Move funds from available to held (returns false if insufficient available)
         if !account.hold(stored_tx.amount) {
-            eprintln!(
-                "Warning: Ignoring dispute on transaction {} - insufficient available balance (client {})",
-                tx.tx, tx.client
-            );
             return;
         }
 
@@ -190,10 +151,6 @@ impl PaymentsEngine {
 
         // Verify client ID matches (security check)
         if stored_tx.client_id != tx.client {
-            eprintln!(
-                "Warning: Ignoring resolve on transaction {} - client mismatch",
-                tx.tx
-            );
             return;
         }
 
@@ -210,10 +167,6 @@ impl PaymentsEngine {
 
         // Move funds from held back to available (returns false if insufficient held)
         if !account.release(stored_tx.amount) {
-            eprintln!(
-                "Warning: Ignoring resolve on transaction {} - insufficient held balance (client {})",
-                tx.tx, tx.client
-            );
             return;
         }
 
@@ -231,10 +184,6 @@ impl PaymentsEngine {
 
         // Verify client ID matches (security check)
         if stored_tx.client_id != tx.client {
-            eprintln!(
-                "Warning: Ignoring chargeback on transaction {} - client mismatch",
-                tx.tx
-            );
             return;
         }
 
@@ -251,10 +200,6 @@ impl PaymentsEngine {
 
         // Remove held funds and lock account (returns false if insufficient held)
         if !account.chargeback(stored_tx.amount) {
-            eprintln!(
-                "Warning: Ignoring chargeback on transaction {} - insufficient held balance (client {})",
-                tx.tx, tx.client
-            );
             return;
         }
 

@@ -1,6 +1,9 @@
+pub mod concurrent_engine;
 pub mod engine;
 pub mod error;
 pub mod models;
+pub mod persistence;
+pub mod persistent_engine;
 
 use std::io::{Read, Write};
 
@@ -21,9 +24,8 @@ pub fn process_transactions<R: Read, W: Write>(reader: R, writer: W) -> Result<(
             Ok(transaction) => {
                 engine.process_transaction(transaction);
             }
-            Err(e) => {
-                // Log warning and continue processing
-                eprintln!("Warning: Failed to parse transaction: {}", e);
+            Err(_) => {
+                // Silently skip malformed transactions
             }
         }
     }

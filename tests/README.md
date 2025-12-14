@@ -14,6 +14,7 @@ tests/
 │   ├── chargebacks.csv     # Chargeback scenarios
 │   ├── edge_cases.csv      # Edge cases (precision, insufficient funds)
 │   └── comprehensive_test.csv  # Complex multi-client scenario
+├── concurrent_tests.rs     # Concurrency and sharding tests
 ├── integration_tests.rs    # End-to-end CSV processing tests (includes table-driven tests)
 ├── unit_account_tests.rs   # Unit tests for Account methods
 └── unit_engine_tests.rs    # Unit tests for PaymentsEngine logic
@@ -47,7 +48,7 @@ Tests business logic and validation rules:
 
 **Philosophy:** Test business rule enforcement and engine logic.
 
-### 3. Integration Tests (28 tests in integration_tests.rs + 4 in common)
+### 3. Integration Tests (28 tests)
 **File:** `integration_tests.rs`
 
 End-to-end tests from CSV input to output, including both traditional and table-driven patterns:
@@ -66,13 +67,29 @@ Each test runs multiple scenarios efficiently using the table-driven pattern:
 - Multi-client isolation → 3 scenarios
 - Duplicate detection → 4 scenarios
 
+**Table-driven tests** run multiple test cases efficiently through shared logic, reducing duplication while maintaining comprehensive coverage.
+
 **Philosophy:** Test the complete processing pipeline. Use table-driven pattern for efficiently testing variations of similar scenarios.
 
-### 4. Common Test Helpers
+### 4. Concurrency Tests (7 tests)
+**File:** `concurrent_tests.rs`
+
+Tests the ShardedEngine for high-concurrency scenarios:
+- Concurrent deposits to same client
+- Concurrent deposits to different clients
+- Mixed concurrent operations (deposits, withdrawals, disputes)
+- Concurrent dispute workflows
+- High concurrency stress testing (1000+ transactions)
+- Transaction ordering per client
+- Throughput benchmarking
+
+**Philosophy:** Verify the concurrent/sharded engine handles thousands of simultaneous transactions correctly without race conditions.
+
+### 5. Common Test Helpers
 **File:** `common/mod.rs`
 
 Reusable utilities to reduce duplication:
-- Transaction builders (`make_deposit`, `make_withdrawal`, etc.)
+- Transaction builders (`make_deposit`, `make_dispute`)
 - CSV processing helpers (`process_csv_string`, `build_csv`)
 - Custom assertions (`assert_client_balance`)
 
@@ -113,13 +130,14 @@ deposit,1,1,100.0
 
 ## Current Test Coverage
 
-**Total Tests:** 73
-- Integration tests: 32 total
+**Total Tests:** 90
+- Integration tests: 28
   - Traditional: 21 (5 with CSV fixtures, 16 inline)
   - Table-driven: 7 (testing 24 total scenarios)
-  - Common module helpers: 4
 - Unit account tests: 20
 - Unit engine tests: 21
+- Concurrency tests: 7
+- Documentation tests: 14
 
 ## Understanding Table-Driven Tests
 

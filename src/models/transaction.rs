@@ -13,7 +13,7 @@ pub enum TransactionType {
 }
 
 /// Transaction record from CSV input
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Clone, Deserialize)]
 pub struct Transaction {
     #[serde(rename = "type")]
     pub tx_type: TransactionType,
